@@ -26,6 +26,7 @@ databases:
   - name: campuscare-db
     region: frankfurt
     plan: free
+    postgresMajorVersion: "17"
     databaseName: campuscare
     user: campuscare_user
     ipAllowList: []
