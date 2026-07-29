@@ -63,17 +63,28 @@ h1, h2, h3 {
     margin-bottom: 0.7rem;
 }
 
-.cc-logo {
-    width: 46px;
-    height: 46px;
-    border-radius: 15px;
-    display: grid;
-    place-items: center;
-    color: white;
-    font-size: 1.4rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #79c8f5 0%, #309ddd 100%);
-    box-shadow: 0 10px 25px rgba(48, 157, 221, 0.25);
+.cc-logo-frame {
+    width: 70px;
+    height: 48px;
+    flex: 0 0 70px;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    filter: drop-shadow(0 8px 14px rgba(48, 157, 221, 0.20));
+}
+
+.cc-logo-image {
+    width: 70px;
+    height: 70px;
+    max-width: none;
+    object-fit: contain;
+    transform: translateY(-10px);
+    display: block;
+}
+
+.cc-brand-copy {
+    min-width: 0;
 }
 
 .cc-brand-name {
