@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import base64
+from functools import lru_cache
 from html import escape
+from pathlib import Path
 
 import streamlit as st
 
@@ -8,13 +11,32 @@ from campuscare.constants import STATUS_LABELS
 from campuscare.models import DonationItem, User
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOGO_PATH = PROJECT_ROOT / "assets" / "CampusCare-Logo.png"
+
+
+@lru_cache(maxsize=1)
+def _logo_markup() -> str:
+    """Return the CampusCare logo as an embedded image for reliable deployment."""
+    if not LOGO_PATH.is_file():
+        return ""
+
+    encoded = base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")
+    return (
+        '<div class="cc-logo-frame">'
+        f'<img class="cc-logo-image" src="data:image/png;base64,{encoded}" '
+        'alt="CampusCare logo">'
+        "</div>"
+    )
+
+
 def brand(compact: bool = False) -> None:
     subtitle = "Student donation platform" if not compact else "NCI community"
     st.markdown(
         f"""
         <div class="cc-brand">
-            <div class="cc-logo">C</div>
-            <div>
+            {_logo_markup()}
+            <div class="cc-brand-copy">
                 <div class="cc-brand-name">CampusCare</div>
                 <div class="cc-brand-subtitle">{subtitle}</div>
             </div>
