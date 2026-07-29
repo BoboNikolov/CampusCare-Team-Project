@@ -94,34 +94,6 @@ python scripts/init_db.py
 streamlit run streamlit_app.py
 ```
 
-## Optional demo data
-
-After configuration, run:
-
-```bash
-python scripts/seed_demo.py
-```
-
-Demo credentials:
-
-```text
-demo@student.ncirl.ie
-Campus123
-```
-
-Do not seed demo credentials into a public final deployment unless they are intentionally required for the presentation.
-
-## GitHub setup
-
-```bash
-git init
-git add .
-git commit -m "Initial CampusCare MVP"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/CampusCare.git
-git push -u origin main
-```
-
 ## Render deployment
 
 The repository includes `render.yaml`, which creates:
@@ -129,16 +101,6 @@ The repository includes `render.yaml`, which creates:
 - a Python web service running Streamlit;
 - a PostgreSQL database in the Frankfurt region;
 - a private `DATABASE_URL` connection from the web service to PostgreSQL.
-
-Deployment steps:
-
-1. Push this repository to GitHub.
-2. In Render, choose **New > Blueprint**.
-3. Connect the GitHub repository.
-4. Render reads `render.yaml` and creates the application and database.
-5. Wait for the first deployment and open the generated `onrender.com` address.
-
-The database tables are created automatically when the application starts.
 
 ## Tests
 
