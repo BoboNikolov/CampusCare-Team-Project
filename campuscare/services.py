@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, lazyload
 
 from campuscare.constants import CATEGORIES, CONDITIONS
 from campuscare.models import DonationItem, Reservation, User
@@ -261,9 +261,53 @@ def get_item(session: Session, item_id: int) -> DonationItem | None:
     return session.scalar(stmt)
 
 
+def _item_lock_statement(item_id: int):
+    return (
+        select(DonationItem)
+        .options(lazyload("*"))
+        .where(DonationItem.id == item_id)
+        .with_for_update(of=DonationItem)
+    )
+
+
+def _reservation_lock_statement(reservation_id: int):
+    return (
+        select(Reservation)
+        .options(lazyload("*"))
+        .where(Reservation.id == reservation_id)
+        .with_for_update(of=Reservation)
+    )
+
+
+def _active_reservations_lock_statement(item_id: int):
+    return (
+        select(Reservation)
+        .options(lazyload("*"))
+        .where(
+            Reservation.item_id == item_id,
+            Reservation.status == "active",
+        )
+        .with_for_update(of=Reservation)
+    )
+
+
+def _lock_item(session: Session, item_id: int) -> DonationItem | None:
+    """Lock only the donation_items row, never eagerly joined relationships.
+
+    PostgreSQL rejects a bare FOR UPDATE when SQLAlchemy has added a LEFT OUTER
+    JOIN for relationship loading. lazyload("*") keeps the lock query focused
+    on the parent table, while ``of=DonationItem`` explicitly scopes the lock.
+    """
+    return session.scalar(_item_lock_statement(item_id))
+
+
+def _lock_reservation(session: Session, reservation_id: int) -> Reservation | None:
+    """Lock only the reservations row without joining its related item."""
+    return session.scalar(_reservation_lock_statement(reservation_id))
+
+
 def reserve_item(session: Session, *, item_id: int, receiver_id: int) -> Reservation:
-    stmt = select(DonationItem).where(DonationItem.id == item_id).with_for_update()
-    item = session.scalar(stmt)
+    item = _lock_item(session, item_id)
     if not item:
         raise ServiceError("Donation item was not found.")
     if not session.get(User, receiver_id):
@@ -294,13 +338,17 @@ def reserve_item(session: Session, *, item_id: int, receiver_id: int) -> Reserva
 
 
 def cancel_reservation(session: Session, *, reservation_id: int, receiver_id: int) -> None:
-    reservation = session.scalar(
-        select(Reservation)
-        .options(joinedload(Reservation.item))
-        .where(Reservation.id == reservation_id)
-        .with_for_update()
+    # Read the foreign key first, then lock in a consistent order: item -> reservation.
+    # This matches the order used by complete/reopen/withdraw and reduces deadlock risk.
+    item_id = session.scalar(
+        select(Reservation.item_id).where(Reservation.id == reservation_id)
     )
-    if not reservation:
+    if item_id is None:
+        raise ServiceError("Reservation was not found.")
+
+    item = _lock_item(session, item_id)
+    reservation = _lock_reservation(session, reservation_id)
+    if not reservation or not item:
         raise ServiceError("Reservation was not found.")
     if reservation.receiver_id != receiver_id:
         raise ServiceError("You cannot cancel another user's reservation.")
@@ -309,18 +357,13 @@ def cancel_reservation(session: Session, *, reservation_id: int, receiver_id: in
 
     reservation.status = "cancelled"
     reservation.cancelled_by = "receiver"
-    reservation.item.status = "available"
+    item.status = "available"
     session.flush()
     recalculate_trust_score(session, receiver_id)
 
 
 def complete_handover(session: Session, *, item_id: int, donor_id: int) -> None:
-    item = session.scalar(
-        select(DonationItem)
-        .options(joinedload(DonationItem.reservations))
-        .where(DonationItem.id == item_id)
-        .with_for_update()
-    )
+    item = _lock_item(session, item_id)
     if not item:
         raise ServiceError("Donation item was not found.")
     if item.donor_id != donor_id:
@@ -328,7 +371,9 @@ def complete_handover(session: Session, *, item_id: int, donor_id: int) -> None:
     if item.status != "reserved":
         raise ServiceError("The item must be reserved before handover can be completed.")
 
-    active = next((r for r in item.reservations if r.status == "active"), None)
+    active = session.scalar(
+        _active_reservations_lock_statement(item_id)
+    )
     if not active:
         raise ServiceError("No active reservation exists for this item.")
 
@@ -340,12 +385,7 @@ def complete_handover(session: Session, *, item_id: int, donor_id: int) -> None:
 
 
 def reopen_donation(session: Session, *, item_id: int, donor_id: int) -> None:
-    item = session.scalar(
-        select(DonationItem)
-        .options(joinedload(DonationItem.reservations))
-        .where(DonationItem.id == item_id)
-        .with_for_update()
-    )
+    item = _lock_item(session, item_id)
     if not item:
         raise ServiceError("Donation item was not found.")
     if item.donor_id != donor_id:
@@ -353,21 +393,20 @@ def reopen_donation(session: Session, *, item_id: int, donor_id: int) -> None:
     if item.status not in {"reserved", "withdrawn"}:
         raise ServiceError("Only reserved or withdrawn items can be reopened.")
 
-    for reservation in item.reservations:
-        if reservation.status == "active":
-            reservation.status = "cancelled"
-            reservation.cancelled_by = "donor"
+    active_reservations = list(
+        session.scalars(
+            _active_reservations_lock_statement(item_id)
+        )
+    )
+    for reservation in active_reservations:
+        reservation.status = "cancelled"
+        reservation.cancelled_by = "donor"
     item.status = "available"
     session.flush()
 
 
 def withdraw_donation(session: Session, *, item_id: int, donor_id: int) -> None:
-    item = session.scalar(
-        select(DonationItem)
-        .options(joinedload(DonationItem.reservations))
-        .where(DonationItem.id == item_id)
-        .with_for_update()
-    )
+    item = _lock_item(session, item_id)
     if not item:
         raise ServiceError("Donation item was not found.")
     if item.donor_id != donor_id:
@@ -375,10 +414,14 @@ def withdraw_donation(session: Session, *, item_id: int, donor_id: int) -> None:
     if item.status == "completed":
         raise ServiceError("Completed donations cannot be withdrawn.")
 
-    for reservation in item.reservations:
-        if reservation.status == "active":
-            reservation.status = "cancelled"
-            reservation.cancelled_by = "donor"
+    active_reservations = list(
+        session.scalars(
+            _active_reservations_lock_statement(item_id)
+        )
+    )
+    for reservation in active_reservations:
+        reservation.status = "cancelled"
+        reservation.cancelled_by = "donor"
     item.status = "withdrawn"
     session.flush()
 
