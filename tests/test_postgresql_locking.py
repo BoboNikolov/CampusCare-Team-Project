@@ -34,4 +34,4 @@ def test_active_reservation_lock_avoids_outer_join() -> None:
     sql = _compile(_active_reservations_lock_statement(1))
     assert "LEFT OUTER JOIN" not in sql
     assert "FOR UPDATE OF RESERVATIONS" in sql
-    assert "RESERVATIONS.STATUS = 'ACTIVE'" in sqllocking.py
+    assert "RESERVATIONS.STATUS = 'ACTIVE'" in sql
