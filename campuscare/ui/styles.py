@@ -25,9 +25,20 @@ CSS = """
     color: var(--cc-text);
 }
 
+/* Keep CampusCare content below Streamlit's fixed top toolbar. */
+header[data-testid="stHeader"] {
+    background: rgba(245, 251, 255, 0.94);
+    border-bottom: 1px solid rgba(215, 232, 244, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+[data-testid="stDecoration"] {
+    display: none;
+}
+
 .block-container {
     max-width: 1180px;
-    padding-top: 1.6rem;
+    padding-top: 5rem;
     padding-bottom: 4rem;
 }
 
@@ -37,7 +48,7 @@ CSS = """
 }
 
 [data-testid="stSidebar"] .block-container {
-    padding-top: 1.4rem;
+    padding-top: 4.4rem;
 }
 
 h1, h2, h3 {
@@ -195,6 +206,18 @@ div[data-testid="stMetric"] {
 
 [data-testid="stAlert"] {
     border-radius: 14px;
+}
+
+@media (max-width: 768px) {
+    .block-container {
+        padding-top: 4.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 4.2rem;
+    }
 }
 
 footer { visibility: hidden; }
