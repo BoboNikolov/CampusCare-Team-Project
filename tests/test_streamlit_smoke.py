@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 streamlit = pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest
+
+
+APP_FILE = Path(__file__).resolve().parents[1] / "streamlit_app.py"
 
 
 @pytest.mark.ui
@@ -13,7 +18,7 @@ def test_authentication_screen_loads(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{database_path}")
     monkeypatch.setenv("ALLOWED_EMAIL_DOMAINS", "student.ncirl.ie,ncirl.ie")
 
-    app = AppTest.from_file("streamlit_app.py", default_timeout=15).run()
+    app = AppTest.from_file(str(APP_FILE), default_timeout=15).run()
 
     assert not app.exception
     assert app.text_input(key="login-email").label == "NCI email"
@@ -28,7 +33,7 @@ def test_user_can_register_and_reach_dashboard(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{database_path}")
     monkeypatch.setenv("ALLOWED_EMAIL_DOMAINS", "student.ncirl.ie,ncirl.ie")
 
-    app = AppTest.from_file("streamlit_app.py", default_timeout=15).run()
+    app = AppTest.from_file(str(APP_FILE), default_timeout=15).run()
     app.text_input(key="register-first-name").set_value("UI")
     app.text_input(key="register-last-name").set_value("Tester")
     app.text_input(key="register-email").set_value("ui.tester@student.ncirl.ie")
