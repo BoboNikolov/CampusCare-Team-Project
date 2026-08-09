@@ -14,6 +14,7 @@ from campuscare.models import DonationItem, User
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOGO_PATH = PROJECT_ROOT / "assets" / "CampusCare-Logo.png"
 
+# Reusable presentation helpers keep shared CampusCare markup consistent across pages.
 
 @lru_cache(maxsize=1)
 def _logo_markup() -> str:
@@ -30,6 +31,7 @@ def _logo_markup() -> str:
     )
 
 
+# Display the CampusCare identity, with a shorter subtitle when used in compact layouts.
 def brand(compact: bool = False) -> None:
     subtitle = "Student donation platform" if not compact else "NCI community"
     st.markdown(
@@ -46,6 +48,7 @@ def brand(compact: bool = False) -> None:
     )
 
 
+# Render the prominent introductory banner used at the top of key screens.
 def hero(title: str, body: str, eyebrow: str = "CampusCare") -> None:
     st.markdown(
         f"""
@@ -59,12 +62,14 @@ def hero(title: str, body: str, eyebrow: str = "CampusCare") -> None:
     )
 
 
+# Convert an internal item status into the styled badge HTML shared by listings.
 def status_pill(status: str) -> str:
     label = STATUS_LABELS.get(status, status.title())
     safe = escape(status)
     return f'<span class="cc-pill cc-status-{safe}">{escape(label)}</span>'
 
 
+# Build a safe, compact donation summary for reuse in cards and search results.
 def item_summary_html(item: DonationItem) -> str:
     description = item.description
     if len(description) > 150:
@@ -81,6 +86,7 @@ def item_summary_html(item: DonationItem) -> str:
     """
 
 
+# Present the user's main profile details and community trust score as a single header.
 def profile_header(user: User) -> None:
     course = escape(user.course or "Course not added")
     year = escape(user.year_of_study or "Year not added")

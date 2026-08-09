@@ -3,6 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 
+# Central stylesheet controlling the visual appearance of the CampusCare Streamlit app.
 CSS = """
 <style>
 :root {
