@@ -8,6 +8,8 @@ from campuscare.services import ServiceError, authenticate_user, register_user
 from campuscare.ui.components import brand, hero
 
 
+# Coordinate the guest interface for login and registration while delegating
+# account validation and persistence to the service layer.
 def authentication_screen(factory: sessionmaker[Session], settings: Settings) -> None:
     brand()
     hero(
@@ -18,6 +20,7 @@ def authentication_screen(factory: sessionmaker[Session], settings: Settings) ->
 
     login_tab, register_tab = st.tabs(("Log in", "Create account"))
 
+    # Existing users are verified before their identifier is stored in session state.
     with login_tab:
         with st.form("login-form"):
             email = st.text_input("NCI email", key="login-email")
@@ -29,10 +32,12 @@ def authentication_screen(factory: sessionmaker[Session], settings: Settings) ->
             if not user:
                 st.error("Email or password is incorrect.")
             else:
+                # Session state allows Streamlit reruns to recognise the signed-in user.
                 st.session_state["user_id"] = user.id
                 st.session_state["_nav_override"] = "Home"
                 st.rerun()
 
+    # Registration collects account details and creates the user in one transaction.
     with register_tab:
         with st.form("register-form"):
             name_cols = st.columns(2)
