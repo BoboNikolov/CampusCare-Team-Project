@@ -8,6 +8,15 @@ CampusCare is a student donation platform for the National College of Ireland co
 - Matheus Pinheiro — 25114921
 - Viviani Nogueira — 24319601
 
+# CampusCare - Student Donation Platform
+
+CampusCare is a web application developed for the National College of Ireland (NCI) community, allowing students to donate and claim reusable items.
+
+## Live Application
+
+CampusCare is deployed on Render:
+[Open CampusCare](https://campuscare-app.onrender.com/)
+
 ## Implemented MVP
 
 - NCI-domain registration and secure login
