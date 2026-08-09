@@ -9,6 +9,8 @@ from campuscare.constants import CATEGORIES, CONDITIONS
 from campuscare.models import DonationItem, Reservation, User
 from campuscare.security import hash_password, normalise_email, validate_allowed_email, verify_password
 
+# This module is the service layer: it centralises business rules and database operations
+# so Streamlit pages can focus on collecting input and presenting results.
 DEFAULT_MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 ALLOWED_IMAGE_MIMES = {"image/png", "image/jpeg", "image/webp"}
 
@@ -307,6 +309,7 @@ def _lock_reservation(session: Session, reservation_id: int) -> Reservation | No
 
 
 def reserve_item(session: Session, *, item_id: int, receiver_id: int) -> Reservation:
+    # Validate the complete reservation workflow here so every caller follows the same rules.
     item = _lock_item(session, item_id)
     if not item:
         raise ServiceError("Donation item was not found.")

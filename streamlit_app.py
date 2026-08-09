@@ -18,6 +18,7 @@ from campuscare.ui.pages import (
 )
 from campuscare.ui.styles import apply_styles
 
+# Main Streamlit entry point: configures the shared page shell before rendering any screen.
 st.set_page_config(
     page_title="CampusCare",
     page_icon=":material/volunteer_activism:",
@@ -29,6 +30,7 @@ apply_styles()
 
 @st.cache_resource(show_spinner=False)
 def app_resources(settings: Settings):
+    # Initialise long-lived database resources once and reuse them across Streamlit reruns.
     engine = build_engine(settings.database_url)
     initialise_database(engine)
     factory = create_session_factory(engine)
@@ -52,6 +54,7 @@ except Exception as exc:
     st.stop()
 
 user_id = st.session_state.get("user_id")
+# Authentication gates the rest of the application and stores the signed-in user in session state.
 if not user_id:
     authentication_screen(session_factory, settings)
     st.stop()
@@ -83,6 +86,7 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
+# Route the sidebar selection to the corresponding page while keeping this file as the navigation hub.
 if selected == "Home":
     dashboard_page(session_factory, current_user.id)
 elif selected == "Browse Items":

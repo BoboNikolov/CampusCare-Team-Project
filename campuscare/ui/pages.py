@@ -36,6 +36,7 @@ def _format_date(value) -> str:
         return value.strftime("%d %b %Y")
 
 
+# Render the landing dashboard with community metrics and the latest available donations.
 def dashboard_page(factory: sessionmaker[Session], user_id: int) -> None:
     hero(
         "Give useful items a second life.",
@@ -70,6 +71,7 @@ def dashboard_page(factory: sessionmaker[Session], user_id: int) -> None:
                     st.rerun()
 
 
+# Present searchable donation listings and handle the user's reservation action.
 def browse_page(factory: sessionmaker[Session], user_id: int) -> None:
     st.title("Browse Donations")
     st.caption("Search available items and reserve one directly from the listing.")
@@ -140,6 +142,7 @@ def browse_page(factory: sessionmaker[Session], user_id: int) -> None:
                     st.markdown(f"**Donor trust score:** {item.donor.trust_score}/100")
 
 
+# Collect and submit a new donation, including its optional image upload.
 def donate_page(factory: sessionmaker[Session], user_id: int, settings: Settings) -> None:
     st.title("Donate an Item")
     st.caption("List a usable item for another NCI student. All donations are free.")
